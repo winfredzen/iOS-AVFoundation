@@ -28,21 +28,43 @@
 #import <AVFoundation/AVFoundation.h>
 
 @interface THPlayerView ()
-// Listing 4.2
+
+@property (strong, nonatomic) THOverlayView *overlayView;
+
 @end
 
 @implementation THPlayerView
+
+//重写layerClass
++ (Class)layerClass
+{
+    return [AVPlayerLayer class];
+}
 
 - (id)initWithPlayer:(AVPlayer *)player {
     self = [super initWithFrame:CGRectZero];
     if (self) {
 
-        // Listing 4.2
+        self.backgroundColor = [UIColor blackColor];
+        self.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
+        [(AVPlayerLayer *)[self layer] setPlayer:player];
+        [[NSBundle mainBundle] loadNibNamed:@"THOverlayView" owner:self options:nil];
+        [self addSubview:_overlayView];
         
     }
     return self;
 }
 
-// Listing 4.2
+- (void)layoutSubviews
+{
+    [super layoutSubviews];
+    self.overlayView.frame = self.bounds;
+}
+
+- (id<THTransport>)transport
+{
+    return self.overlayView;
+}
+
 
 @end

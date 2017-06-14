@@ -46,11 +46,35 @@ static const NSString *PlayerItemStatusContext;
 
 @property (strong, nonatomic) THPlayerView *playerView;
 
-// Listing 4.4
+@property (strong, nonatomic) AVAsset *asset;
+
+@property (strong, nonatomic) AVPlayerItem *playerItem;
+
+@property (strong, nonatomic) AVPlayer *player;
+
+@property (weak, nonatomic) id<THTransport> transport;
+
+@property (strong, nonatomic) id timeObserver;
+
+@property (strong, nonatomic) id itemEndObserver;
+
+@property (assign, nonatomic) float lastPlaybackRate;
 
 @end
 
 @implementation THPlayerController
+
+- (void)dealloc
+{
+    //移除itemEndObserver
+    if (self.itemEndObserver) {
+        
+        NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+        [nc removeObserver:self.itemEndObserver name:AVPlayerItemDidPlayToEndTimeNotification object:self.playerItem];
+        self.itemEndObserver = nil;
+        
+    }
+}
 
 #pragma mark - Setup
 
@@ -58,7 +82,8 @@ static const NSString *PlayerItemStatusContext;
     self = [super init];
     if (self) {
         
-        // Listing 4.6
+        _asset = [AVAsset assetWithURL:assetURL];
+        [self prepareToPlay];
         
     }
     return self;
@@ -66,7 +91,16 @@ static const NSString *PlayerItemStatusContext;
 
 - (void)prepareToPlay {
 
-    // Listing 4.6
+    NSArray *keys = @[@"tracks", @"durations", @"commonMetadata"];
+    self.playerItem = [AVPlayerItem playerItemWithAsset:self.asset automaticallyLoadedAssetKeys:keys];
+    //KVO监听self.playerItem的status属性
+    [self.playerItem addObserver:self forKeyPath:STATUS_KEYPATH options:0 context:&PlayerItemStatusContext];
+    
+    self.player = [AVPlayer playerWithPlayerItem:self.playerItem];
+    
+    self.playerView = [[THPlayerView alloc] initWithPlayer:self.player];
+    self.transport = self.playerView.transport;
+    self.transport.delegate = self;
     
 }
 
@@ -75,21 +109,78 @@ static const NSString *PlayerItemStatusContext;
                         change:(NSDictionary *)change
                        context:(void *)context {
     
-    // Listing 4.7
+    if(context == &PlayerItemStatusContext)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self.playerItem removeObserver:self forKeyPath:STATUS_KEYPATH];
+            //状态变为AVPlayerItemStatusReadyToPlay才可以开始播放
+            if (self.playerItem.status == AVPlayerItemStatusReadyToPlay) {
+                
+                //设置播放器的时间监视器
+                [self addPlayerItemTimeObserver];
+                [self addItemEndObserverForPlayerItem];
+                
+                CMTime duration = self.playerItem.duration;
+                
+                //设置当前时间和总长
+                [self.transport setCurrentTime:CMTimeGetSeconds(kCMTimeZero) duration:CMTimeGetSeconds(duration)];
+                //设置标题字符串
+                [self.transport setTitle:self.asset.title];
+                
+                //播放视频
+                [self.player play];
+                
+            }else{
+                
+                [UIAlertView showAlertWithTitle:@"错误" message:@"加载视频失败"];
+                
+            }
+        });
+    }
     
 }
 
 #pragma mark - Time Observers
-
+//定期监听
 - (void)addPlayerItemTimeObserver {
 
-    // Listing 4.8
+    //0.5s刷新
+    CMTime interval = CMTimeMakeWithSeconds(REFRESH_INTERVAL, NSEC_PER_SEC);
+    
+    dispatch_queue_t queue = dispatch_get_main_queue();
+    __weak THPlayerController *weakSelf = self;
+    
+    void(^callback)(CMTime time) = ^(CMTime time){
+        NSTimeInterval currentTime = CMTimeGetSeconds(time);
+        NSTimeInterval duration = CMTimeGetSeconds(self.playerItem.duration);
+        [weakSelf.transport setCurrentTime:currentTime duration:duration];
+        
+    };
+    //添加observer，并保存以未来使用
+    self.timeObserver = [self.player addPeriodicTimeObserverForInterval:interval queue:queue usingBlock:callback];
+
     
 }
 
+//条目播放完毕监听
 - (void)addItemEndObserverForPlayerItem {
 
-    // Listing 4.9
+    NSString *name = AVPlayerItemDidPlayToEndTimeNotification;
+    NSOperationQueue *queue = [NSOperationQueue mainQueue];
+    
+    __weak THPlayerController *weakSelf = self;
+    void (^callback)(NSNotification *note) = ^(NSNotification *notification){
+        //重新定位播放头光标回到0位置
+        [weakSelf.player seekToTime:kCMTimeZero completionHandler:^(BOOL finished) {
+            //播放完毕
+            [weakSelf.transport playbackComplete];
+        }];
+    };
+    
+    self.itemEndObserver = [[NSNotificationCenter defaultCenter] addObserverForName:name
+                                                                             object:self.playerItem
+                                                                              queue:queue
+                                                                         usingBlock:callback];
     
 }
 
@@ -97,42 +188,54 @@ static const NSString *PlayerItemStatusContext;
 
 - (void)play {
 
-    // Listing 4.10
+    [self.player play];
     
 }
 
 - (void)pause {
 
-    // Listing 4.10
+    self.lastPlaybackRate = self.player.rate;
+    [self.player pause];
     
 }
 
 - (void)stop {
 
-    // Listing 4.10
+    [self.player setRate:0.0f];
+    [self.transport playbackComplete];
     
 }
 
 - (void)jumpedToTime:(NSTimeInterval)time {
 
-    // Listing 4.10
+    [self.player seekToTime:CMTimeMakeWithSeconds(time, NSEC_PER_SEC)];
     
 }
 
+#pragma mark - 擦拭条相关
+
 - (void)scrubbingDidStart {
 
-    // Listing 4.11
+    self.lastPlaybackRate = self.player.rate;
+    [self.player pause];
+    [self.player removeTimeObserver:self.timeObserver];
+    
 }
 
 - (void)scrubbedToTime:(NSTimeInterval)time {
 
-    // Listing 4.11
+    //如果前一个搜索请求没有完成，则避免出现搜索操作堆积情况的出现
+    [self.playerItem cancelPendingSeeks];
+    [self.player seekToTime:CMTimeMakeWithSeconds(time, NSEC_PER_SEC)];
     
 }
 
 - (void)scrubbingDidEnd {
 
-    // Listing 4.11
+    [self addPlayerItemTimeObserver];
+    if (self.lastPlaybackRate > 0.0f) {
+        [self.player play];
+    }
     
 }
 

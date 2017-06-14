@@ -31,6 +31,7 @@
 
 - (id)initWithPlayer:(AVPlayer *)player;
 
+//负责管理展示在视图中的可视化控件
 @property (nonatomic, readonly) id <THTransport> transport;
 
 @end
