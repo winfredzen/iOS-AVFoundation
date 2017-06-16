@@ -14,7 +14,7 @@
 	#import <UIKit/UIKit.h>
 	#import <Foundation/Foundation.h>
 
-#define ENABLE_SUBTITLES 0
+#define ENABLE_SUBTITLES 1
 #define ENABLE_AIRPLAY 0
 
 #endif

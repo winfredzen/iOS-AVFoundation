@@ -95,7 +95,7 @@ static const NSString *PlayerItemStatusContext;
 
 - (void)prepareToPlay {
 
-    NSArray *keys = @[@"tracks", @"durations", @"commonMetadata"];
+    NSArray *keys = @[@"tracks", @"durations", @"commonMetadata", @"availableMediaCharacteristicsWithMediaSelectionOptions"];
     self.playerItem = [AVPlayerItem playerItemWithAsset:self.asset automaticallyLoadedAssetKeys:keys];
     //KVO监听self.playerItem的status属性
     [self.playerItem addObserver:self forKeyPath:STATUS_KEYPATH options:0 context:&PlayerItemStatusContext];
@@ -136,6 +136,9 @@ static const NSString *PlayerItemStatusContext;
                 
                 //生成图片
                 [self generateThumbnails];
+                
+                //字幕相关
+                [self loadMediaOptions];
                 
             }else{
                 
@@ -289,16 +292,38 @@ static const NSString *PlayerItemStatusContext;
 
 }
 
-
+#pragma mark - 字幕相关
 - (void)loadMediaOptions {
 
-    // Listing 4.16
+    NSString *mc = AVMediaCharacteristicLegible;
+    //Pass AVMediaCharacteristicLegible to obtain the group of available options for subtitles in various languages and for various purposes.
+    AVMediaSelectionGroup *group = [self.asset mediaSelectionGroupForMediaCharacteristic:mc];
+    if (group) {
+        NSMutableArray *subtitles = [NSMutableArray array];
+        for (AVMediaSelectionOption *option in group.options) {
+            [subtitles addObject:option.displayName];
+        }
+        [self.transport setSubtitles:subtitles];
+    }else {
+        [self.transport setSubtitles:nil];
+    }
     
 }
 
 - (void)subtitleSelected:(NSString *)subtitle {
 
-    // Listing 4.17
+    NSString *mc = AVMediaCharacteristicLegible;
+    AVMediaSelectionGroup *group = [self.asset mediaSelectionGroupForMediaCharacteristic:mc];
+    BOOL selected = NO;
+    for (AVMediaSelectionOption *option in group.options) {
+        if ([option.displayName isEqualToString:subtitle]) {
+            [self.playerItem selectMediaOption:option inMediaSelectionGroup:group];
+            selected = YES;
+        }
+    }
+    if (!selected) {
+        [self.playerItem selectMediaOption:nil inMediaSelectionGroup:group];
+    }
     
 }
 
