@@ -31,6 +31,7 @@
 #import "AVAsset+THAdditions.h"
 #import "UIAlertView+THAdditions.h"
 #import "THNotifications.h"
+#import "THThumbnail.h"
 
 // AVPlayerItem's status property
 #define STATUS_KEYPATH @"status"
@@ -59,6 +60,9 @@ static const NSString *PlayerItemStatusContext;
 @property (strong, nonatomic) id itemEndObserver;
 
 @property (assign, nonatomic) float lastPlaybackRate;
+
+//生成图片
+@property (strong, nonatomic) AVAssetImageGenerator *imageGenerator;
 
 @end
 
@@ -129,6 +133,9 @@ static const NSString *PlayerItemStatusContext;
                 
                 //播放视频
                 [self.player play];
+                
+                //生成图片
+                [self generateThumbnails];
                 
             }else{
                 
@@ -244,7 +251,41 @@ static const NSString *PlayerItemStatusContext;
 
 - (void)generateThumbnails {
 
-    // Listing 4.14
+    self.imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:self.asset];
+    self.imageGenerator.maximumSize = CGSizeMake(200.0f, 0.0f);
+    
+    CMTime duration = self.asset.duration;
+    
+    NSMutableArray *times = [NSMutableArray array];
+    CMTimeValue increment = duration.value / 20;
+    CMTimeValue currentValue = kCMTimeZero.value;
+    while (currentValue <= duration.value) {
+        CMTime time = CMTimeMake(currentValue, duration.timescale);
+        [times addObject:[NSValue valueWithCMTime:time]];
+         currentValue += increment;
+    }
+    
+    __block NSUInteger imageCount = times.count;
+    __block NSMutableArray *images = [NSMutableArray array];
+    
+    [self.imageGenerator generateCGImagesAsynchronouslyForTimes:times completionHandler:^(CMTime requestedTime, CGImageRef  _Nullable imageRef, CMTime actualTime, AVAssetImageGeneratorResult result, NSError * _Nullable error) {
+        if (result == AVAssetImageGeneratorSucceeded) {
+            UIImage *image = [UIImage imageWithCGImage:imageRef];
+            id thumbnail = [THThumbnail thumbnailWithImage:image time:actualTime];
+            [images addObject:thumbnail];
+        }else{
+            NSLog(@"Failded to create thumbnail image.");
+        }
+        
+        if (--imageCount == 0) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                NSString *name = THThumbnailsGeneratedNotification;
+                NSNotificationCenter *nc = [NSNotificationCenter defaultCenter];
+                [nc postNotificationName:name object:images];
+            });
+        }
+        
+    }];
 
 }
 
