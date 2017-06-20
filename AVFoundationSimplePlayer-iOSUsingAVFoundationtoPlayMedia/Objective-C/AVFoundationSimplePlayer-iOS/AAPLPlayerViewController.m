@@ -48,6 +48,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
         Use the context parameter to distinguish KVO for our particular observers and not
         those destined for a subclass that also happens to be observing these properties.
     */
+    //监测asset的变化
     [self addObserver:self forKeyPath:@"asset" options:NSKeyValueObservingOptionNew context:&AAPLPlayerViewControllerKVOContext];
     [self addObserver:self forKeyPath:@"player.currentItem.duration" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial context:&AAPLPlayerViewControllerKVOContext];
     [self addObserver:self forKeyPath:@"player.rate" options:NSKeyValueObservingOptionNew | NSKeyValueObservingOptionInitial context:&AAPLPlayerViewControllerKVOContext];
@@ -59,6 +60,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
     self.asset = [AVURLAsset assetWithURL:movieURL];
 
     // Use a weak self variable to avoid a retain cycle in the block.
+    // 监测进度
     AAPLPlayerViewController __weak *weakSelf = self;
     _timeObserverToken = [self.player addPeriodicTimeObserverForInterval:CMTimeMake(1, 1) queue:dispatch_get_main_queue() usingBlock:
         ^(CMTime time) {
@@ -89,6 +91,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
     return @[ @"playable", @"hasProtectedContent" ];
 }
 
+//创建AVPlayer
 - (AVPlayer *)player {
     if (!_player)
         _player = [[AVPlayer alloc] init];
@@ -133,7 +136,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
 }
 
 // MARK: - Asset Loading
-
+// 异步加载加载asset
 - (void)asynchronouslyLoadURLAsset:(AVURLAsset *)newAsset {
 
     /*
@@ -142,6 +145,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
         properties. It's prudent to defer our work until the properties
         we need have been loaded.
     */
+    //填充属性的时候可能会阻塞主线程，等属性都加载完毕后再开始工作
     [newAsset loadValuesAsynchronouslyForKeys:AAPLPlayerViewController.assetKeysRequiredToPlay completionHandler:^{
 
         /*
@@ -189,6 +193,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
                 We can play this asset. Create a new AVPlayerItem and make it
                 our player's current item.
             */
+            //可以使用这个asset 创建AVPlayerItem
             self.playerItem = [AVPlayerItem playerItemWithAsset:newAsset];
         });
     }];
@@ -210,10 +215,11 @@ static int AAPLPlayerViewControllerKVOContext = 0;
     }
 }
 
+//快退
 - (IBAction)rewindButtonWasPressed:(UIButton *)sender {
     self.rate = MAX(self.player.rate - 2.0, -2.0); // rewind no faster than -2.0
 }
-
+//快进
 - (IBAction)fastForwardButtonWasPressed:(UIButton *)sender {
     self.rate = MIN(self.player.rate + 2.0, 2.0); // fast forward no faster than 2.0
 }
@@ -222,7 +228,7 @@ static int AAPLPlayerViewControllerKVOContext = 0;
     self.currentTime = CMTimeMakeWithSeconds(sender.value, 1000);
 }
 
-// MARK: - KV Observation
+// MARK: - KV Observation KVO观察者
 
 // Update our UI when player or player.currentItem changes
 - (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
@@ -248,8 +254,10 @@ static int AAPLPlayerViewControllerKVOContext = 0;
         BOOL hasValidDuration = CMTIME_IS_NUMERIC(newDuration) && newDuration.value != 0;
         double newDurationSeconds = hasValidDuration ? CMTimeGetSeconds(newDuration) : 0.0;
 
+        //设置slider的最大值
         self.timeSlider.maximumValue = newDurationSeconds;
         self.timeSlider.value = hasValidDuration ? CMTimeGetSeconds(self.currentTime) : 0.0;
+        
         self.rewindButton.enabled = hasValidDuration;
         self.playPauseButton.enabled = hasValidDuration;
         self.fastForwardButton.enabled = hasValidDuration;
