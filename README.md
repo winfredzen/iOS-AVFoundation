@@ -8,7 +8,7 @@ AVFoundation学习的一些资源和例子
 
 [IOS Video Editing Tutorial — Part 1: Creating A Player](https://www.jackrabbitmobile.com/app-development/ios-video-editing-tutorial%E2%80%8A-%E2%80%8Apart-1-creating-a-player/)，界面如下：
 
-![player_03](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/player_03.png)
+![player_03](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/player_03.gif)
 
 [AV Foundation开发秘籍中的章节中的介绍的例子](https://github.com/winfredzen/iOS-AVFoundation/tree/master/THPlayer/VideoPlayer_Starter),界面如下：
 ![player_01](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/player_01.png)
