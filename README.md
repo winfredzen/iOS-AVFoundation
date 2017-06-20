@@ -24,8 +24,8 @@ Apple的实例代码：
 
 [AVCam-iOS: Using AVFoundation to Capture Images and Movies](https://developer.apple.com/library/content/samplecode/AVCam/Introduction/Intro.html#//apple_ref/doc/uid/DTS40010112-Intro-DontLinkElementID_2)，效果如下：
 
-![camera_01](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/camera_01.png)
+![camera_02](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/camera_02.png)
 
 [AV Foundation开发秘籍中的示例](https://github.com/winfredzen/iOS-AVFoundation/tree/master/Camera/Kamera_Starter)，效果如下：
 
-![camera_02](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/camera_02.png)
+![camera_01](https://github.com/winfredzen/iOS-AVFoundation/blob/master/images/camera_01.png)
