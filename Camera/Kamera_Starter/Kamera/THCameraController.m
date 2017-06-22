@@ -199,9 +199,10 @@ NSString *const THThumbnailCreatedNotification = @"THThumbnailCreated";
 - (void)focusAtPoint:(CGPoint)point {
     
     AVCaptureDevice *device = [self activeCamera];
-    
+    //是否支持自动对焦模式
     if (device.isFocusPointOfInterestSupported && [device isFocusModeSupported:AVCaptureFocusModeAutoFocus]) {
         
+        //先锁定设备准备配置，执行所需的修改，最后解锁设备
         NSError *error;
         if ([device lockForConfiguration:&error]) {
             device.focusPointOfInterest = point;
@@ -221,24 +222,29 @@ NSString *const THThumbnailCreatedNotification = @"THThumbnailCreated";
 }
 
 // Define KVO context pointer for observing 'adjustingExposure" device property.
+//KVO上下文，来观察adjustingExposure属性
 static const NSString *THCameraAdjustingExposureContext;
 
 - (void)exposeAtPoint:(CGPoint)point {
     
     AVCaptureDevice *device = [self activeCamera];
     
-    AVCaptureExposureMode exposureMode =
-    AVCaptureExposureModeContinuousAutoExposure;
+    //默认曝光模式是AVCaptureExposureModeContinuousAutoExposure
+    //即根据场景的变化自动调整曝光度
+    AVCaptureExposureMode exposureMode = AVCaptureExposureModeContinuousAutoExposure;
     
-    if (device.isExposurePointOfInterestSupported &&
-        [device isExposureModeSupported:exposureMode]) {
+    if (device.isExposurePointOfInterestSupported && [device isExposureModeSupported:exposureMode]) {
         
         NSError *error;
         if ([device lockForConfiguration:&error]) {
             
             device.exposurePointOfInterest = point;
             device.exposureMode = exposureMode;
-            
+            /*
+             *判断设备是否支持锁定曝光模式
+             *使用KVO来确定设备adjustingExposure属性的状态
+             *观察该属性可以知道曝光调整何时完成，让我们有机会在该点上锁定曝光
+             */
             if ([device isExposureModeSupported:AVCaptureExposureModeLocked]) {
                 [device addObserver:self
                          forKeyPath:@"adjustingExposure"
@@ -254,17 +260,13 @@ static const NSString *THCameraAdjustingExposureContext;
 
 }
 
-- (void)observeValueForKeyPath:(NSString *)keyPath
-                      ofObject:(id)object
-                        change:(NSDictionary *)change
-                       context:(void *)context {
+- (void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
 
     if (context == &THCameraAdjustingExposureContext) {
         
         AVCaptureDevice *device = (AVCaptureDevice *)object;
         
-        if (!device.isAdjustingExposure &&
-            [device isExposureModeSupported:AVCaptureExposureModeLocked]) {
+        if (!device.isAdjustingExposure && [device isExposureModeSupported:AVCaptureExposureModeLocked]) {
             
             [object removeObserver:self
                         forKeyPath:@"adjustingExposure"
@@ -290,21 +292,18 @@ static const NSString *THCameraAdjustingExposureContext;
 
 }
 
+//重新设置对焦和曝光
 - (void)resetFocusAndExposureModes {
-
     
     AVCaptureDevice *device = [self activeCamera];
     
-    AVCaptureExposureMode exposureMode =
-    AVCaptureExposureModeContinuousAutoExposure;
+    AVCaptureExposureMode exposureMode = AVCaptureExposureModeContinuousAutoExposure;
     
     AVCaptureFocusMode focusMode = AVCaptureFocusModeContinuousAutoFocus;
     
-    BOOL canResetFocus = [device isFocusPointOfInterestSupported] &&
-    [device isFocusModeSupported:focusMode];
+    BOOL canResetFocus = [device isFocusPointOfInterestSupported] && [device isFocusModeSupported:focusMode];
     
-    BOOL canResetExposure = [device isExposurePointOfInterestSupported] &&
-    [device isExposureModeSupported:exposureMode];
+    BOOL canResetExposure = [device isExposurePointOfInterestSupported] && [device isExposureModeSupported:exposureMode];
     
     CGPoint centerPoint = CGPointMake(0.5f, 0.5f);
     
@@ -332,7 +331,7 @@ static const NSString *THCameraAdjustingExposureContext;
 
 
 #pragma mark - Flash and Torch Modes
-
+//是否支持闪光灯
 - (BOOL)cameraHasFlash {
     return [[self activeCamera] hasFlash];
 }
@@ -345,8 +344,7 @@ static const NSString *THCameraAdjustingExposureContext;
     
     AVCaptureDevice *device = [self activeCamera];
     
-    if (device.flashMode != flashMode &&
-        [device isFlashModeSupported:flashMode]) {
+    if (device.flashMode != flashMode && [device isFlashModeSupported:flashMode]) {
         
         NSError *error;
         if ([device lockForConfiguration:&error]) {
@@ -358,6 +356,7 @@ static const NSString *THCameraAdjustingExposureContext;
     }
 }
 
+//是否支持手电筒
 - (BOOL)cameraHasTorch {
     return [[self activeCamera] hasTorch];
 }
@@ -386,12 +385,11 @@ static const NSString *THCameraAdjustingExposureContext;
 
 
 #pragma mark - Image Capture Methods
-
+//捕获图片
 - (void)captureStillImage {
     
-    AVCaptureConnection *connection =
-    [self.imageOutput connectionWithMediaType:AVMediaTypeVideo];
-    
+    AVCaptureConnection *connection = [self.imageOutput connectionWithMediaType:AVMediaTypeVideo];
+    //调整结果图片的方法
     if (connection.isVideoOrientationSupported) {
         connection.videoOrientation = [self currentVideoOrientation];
     }
@@ -399,31 +397,28 @@ static const NSString *THCameraAdjustingExposureContext;
     id handler = ^(CMSampleBufferRef sampleBuffer, NSError *error) {
         if (sampleBuffer != NULL) {
             
-            NSData *imageData =
-            [AVCaptureStillImageOutput
-             jpegStillImageNSDataRepresentation:sampleBuffer];
+            NSData *imageData = [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:sampleBuffer];
             
             UIImage *image = [[UIImage alloc] initWithData:imageData];
-            [self writeImageToAssetsLibrary:image];                         // 1
-            
+            [self writeImageToAssetsLibrary:image];
         } else {
             NSLog(@"NULL sampleBuffer: %@", [error localizedDescription]);
         }
     };
-    // Capture still image
-    [self.imageOutput captureStillImageAsynchronouslyFromConnection:connection
-                                                  completionHandler:handler];
+    
+    [self.imageOutput captureStillImageAsynchronouslyFromConnection:connection completionHandler:handler];
 }
 
+//写入资源库
 - (void)writeImageToAssetsLibrary:(UIImage *)image {
     
-    ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];              // 2
+    ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
     
-    [library writeImageToSavedPhotosAlbum:image.CGImage                     // 3
-                              orientation:(NSInteger)image.imageOrientation // 4
+    [library writeImageToSavedPhotosAlbum:image.CGImage
+                              orientation:(NSInteger)image.imageOrientation
                           completionBlock:^(NSURL *assetURL, NSError *error) {
                               if (!error) {
-                                  [self postThumbnailNotifification:image]; // 5
+                                  [self postThumbnailNotifification:image];
                               } else {
                                   id message = [error localizedDescription];
                                   NSLog(@"Error: %@", message);
@@ -438,11 +433,13 @@ static const NSString *THCameraAdjustingExposureContext;
     });
 }
 
+//根据UIDevice的orientation，获取AVCaptureVideoOrientation
+//注意左侧和右侧的AVCaptureVideoOrientation值是和它们的UIDevice orientation值相反
 - (AVCaptureVideoOrientation)currentVideoOrientation {
     
     AVCaptureVideoOrientation orientation;
     
-    switch ([UIDevice currentDevice].orientation) {                         // 3
+    switch ([UIDevice currentDevice].orientation) {
         case UIDeviceOrientationPortrait:
             orientation = AVCaptureVideoOrientationPortrait;
             break;
@@ -465,15 +462,39 @@ static const NSString *THCameraAdjustingExposureContext;
 #pragma mark - Video Capture Methods
 
 - (BOOL)isRecording {
-
-    // Listing 6.14
-    
-    return NO;
+    return self.movieOutput.isRecording;
 }
 
 - (void)startRecording {
 
-    // Listing 6.14
+    if (![self isRecording]) {
+        //获取处理当前视频捕捉连接的信息
+        AVCaptureConnection *videoConnection = [self.movieOutput connectionWithMediaType:AVMediaTypeVideo];
+        //设置视频方法
+        if ([videoConnection isVideoOrientationSupported]) {
+            videoConnection.videoOrientation = [self currentVideoOrientation];
+        }
+        //支持视频稳定
+        if ([videoConnection isVideoStabilizationSupported]) {
+            videoConnection.enablesVideoStabilizationWhenAvailable = YES;
+        }
+        
+        AVCaptureDevice *device = [self activeCamera];
+        
+        //摄像头可以进行平滑对焦模式的操作，即减慢摄像头对焦的速度
+        if (device.isSmoothAutoFocusEnabled) {
+            NSError *error;
+            if ([device lockForConfiguration:&error]) {
+                device.smoothAutoFocusEnabled = YES;
+                [device unlockForConfiguration];
+            }else{
+                [self.delegate deviceConfigurationFailedWithError:error];
+            }
+        }
+        
+        self.outputURL = [self uniqueURL];
+        [self.movieOutput startRecordingToOutputFileURL:self.outputURL recordingDelegate:self];
+    }
 
 }
 
@@ -481,17 +502,26 @@ static const NSString *THCameraAdjustingExposureContext;
     return self.movieOutput.recordedDuration;
 }
 
+//文件路径
+/*
+ *The mkdtemp() function shall create a directory with a unique name derived from template. The application shall ensure that the string provided in template is a pathname ending with at least six trailing 'X' characters. The mkdtemp() function shall modify the contents of template by replacing six or more 'X' characters at the end of the pathname with the same number of characters from the portable filename character set.
+ */
 - (NSURL *)uniqueURL {
-
-
-    // Listing 6.14
-    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *dirPath = [fileManager temporaryDirectoryWithTemplateString:@"kamera.XXXXXX"];
+    if (dirPath) {
+        NSString *filePath = [dirPath stringByAppendingPathComponent:@"kamera_movie.mov"];
+        return [NSURL fileURLWithPath:filePath];
+    }
     return nil;
 }
 
+//停止录制
 - (void)stopRecording {
-
-    // Listing 6.14
+    if([self isRecording])
+    {
+        [self.movieOutput stopRecording];
+    }
 }
 
 #pragma mark - AVCaptureFileOutputRecordingDelegate
@@ -501,19 +531,53 @@ didFinishRecordingToOutputFileAtURL:(NSURL *)outputFileURL
       fromConnections:(NSArray *)connections
                 error:(NSError *)error {
 
-    // Listing 6.15
+    if(error){
+        [self.delegate mediaCaptureFailedWithError:error];
+    }else{
+        [self writeVideoToAssetsLibrary:[self.outputURL copy]];
+    }
+    self.outputURL = nil;
 
 }
 
 - (void)writeVideoToAssetsLibrary:(NSURL *)videoURL {
 
-    // Listing 6.15
+    ALAssetsLibrary *library = [[ALAssetsLibrary alloc] init];
+    //检查视频是否可被写入
+    if ([library videoAtPathIsCompatibleWithSavedPhotosAlbum:videoURL]) {
+        
+        [library writeVideoAtPathToSavedPhotosAlbum:videoURL completionBlock:^(NSURL *assetURL, NSError *error) {
+            if (error) {
+                [self.delegate assetLibraryWriteFailedWithError:error];
+            }else{
+                [self generateThumbnailForVideoAtURL:videoURL];
+            }
+        }];
+        
+    }
     
 }
 
 - (void)generateThumbnailForVideoAtURL:(NSURL *)videoURL {
 
-    // Listing 6.15
+    dispatch_async(self.videoQueue, ^{
+        
+        AVAsset *asset = [AVAsset assetWithURL:videoURL];
+        
+        AVAssetImageGenerator *imageGenerator = [AVAssetImageGenerator assetImageGeneratorWithAsset:asset];
+        imageGenerator.maximumSize = CGSizeMake(100.0f, 0.0f);
+        imageGenerator.appliesPreferredTrackTransform = YES;
+        
+        //捕获一张图片
+        CGImageRef imageRef = [imageGenerator copyCGImageAtTime:kCMTimeZero actualTime:NULL error:nil];
+        UIImage *image = [UIImage imageWithCGImage:imageRef];
+        CGImageRelease(imageRef);
+        
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self postThumbnailNotifification:image];
+        });
+        
+    });
     
 }
 
