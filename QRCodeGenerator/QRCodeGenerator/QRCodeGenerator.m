@@ -33,7 +33,7 @@
 
 + (UIImage *)QRImageWithString:(NSString *) string size:(CGSize)destSize;
 {
-    // Create filter
+    //创建filter
     CIFilter *qrFilter = [CIFilter filterWithName:@"CIQRCodeGenerator"];
     if (!qrFilter)
     {
@@ -41,16 +41,15 @@
         return nil;
     }
     
-    // "The inputCorrectionLevel parameter controls the amount of additional data encoded in the output image to provide error correction. Higher levels of error correction result in larger output images but allow larger areas of the code to be damaged or obscured without. There are four possible correction modes (with corresponding error resilience levels)"
-    // Set correction level
+    // 设置 correction level
     // L 7% , M 15% , Q 25% , H 30%
     [qrFilter setValue:@"H" forKey:@"inputCorrectionLevel"];
     
-    // Set input text
+    //设置输入的text
     NSData *stringData = [string dataUsingEncoding:NSUTF8StringEncoding];
     [qrFilter setValue:stringData forKey:@"inputMessage"];
     
-    // Retrieve output image
+    //获取输出的image
     CIImage *outputImage = [qrFilter valueForKey:@"outputImage"];
     
     UIImage *smallImage = [self imageWithCIImage:outputImage orientation: UIImageOrientationUp];
