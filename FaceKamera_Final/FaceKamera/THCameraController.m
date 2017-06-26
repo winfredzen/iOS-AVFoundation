@@ -26,27 +26,51 @@
 #import "THCameraController.h"
 #import <AVFoundation/AVFoundation.h>
 
-@interface THCameraController () // Listing 7.7
-
-// Listing 7.6
-
+@interface THCameraController () <AVCaptureMetadataOutputObjectsDelegate>   // 1
+@property (strong, nonatomic) AVCaptureMetadataOutput *metadataOutput;
 @end
 
 @implementation THCameraController
 
 - (BOOL)setupSessionOutputs:(NSError **)error {
 
-    // Listing 7.6
+    self.metadataOutput = [[AVCaptureMetadataOutput alloc] init];           // 2
 
-    return NO;
+    if ([self.captureSession canAddOutput:self.metadataOutput]) {
+        [self.captureSession addOutput:self.metadataOutput];
+
+        NSArray *metadataObjectTypes = @[AVMetadataObjectTypeFace];         // 3
+        self.metadataOutput.metadataObjectTypes = metadataObjectTypes;
+
+        dispatch_queue_t mainQueue = dispatch_get_main_queue();
+        [self.metadataOutput setMetadataObjectsDelegate:self                // 4
+                                                  queue:mainQueue];
+
+        return YES;
+
+    } else {                                                                // 5
+        if (error) {
+            NSDictionary *userInfo = @{NSLocalizedDescriptionKey:
+                                           @"Failed to still image output."};
+            *error = [NSError errorWithDomain:THCameraErrorDomain
+                                         code:THCameraErrorFailedToAddOutput
+                                     userInfo:userInfo];
+        }
+        return NO;
+    }
 }
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput
 didOutputMetadataObjects:(NSArray *)metadataObjects
        fromConnection:(AVCaptureConnection *)connection {
 
-    // Listing 7.7
+    for (AVMetadataFaceObject *face in metadataObjects) {                   // 2
+        NSLog(@"Face detected with ID: %li", (long)face.faceID);
+        NSLog(@"Face bounds: %@", NSStringFromCGRect(face.bounds));
+    }
 
+    [self.faceDetectionDelegate didDetectFaces:metadataObjects];            // 3
+    
 }
 
 @end

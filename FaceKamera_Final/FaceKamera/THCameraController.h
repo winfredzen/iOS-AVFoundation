@@ -27,8 +27,6 @@
 #import "THBaseCameraController.h"
 #import "THFaceDetectionDelegate.h"
 
-// NOTE: THFaceDetectionDelegate shown in Listing 7.5 has been moved to its own file
-
 @interface THCameraController : THBaseCameraController
 
 @property (weak, nonatomic) id <THFaceDetectionDelegate> faceDetectionDelegate;
