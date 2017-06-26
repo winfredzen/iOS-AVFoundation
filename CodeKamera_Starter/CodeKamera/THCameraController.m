@@ -61,8 +61,7 @@
         dispatch_queue_t mainQueue = dispatch_get_main_queue();
         [self.metadataOutput setMetadataObjectsDelegate:self queue:mainQueue];
         
-        NSArray *types = @[AVMetadataObjectTypeQRCode,
-                           AVMetadataObjectTypeAztecCode];
+        NSArray *types = @[AVMetadataObjectTypeQRCode, AVMetadataObjectTypeAztecCode];
         self.metadataOutput.metadataObjectTypes = types;
     }else{
         NSDictionary *userInfo = @{NSLocalizedDescriptionKey: @"Failed to add metadata output."};
