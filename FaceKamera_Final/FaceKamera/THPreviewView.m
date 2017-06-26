@@ -25,7 +25,7 @@
 
 #import "THPreviewView.h"
 
-@interface THPreviewView ()                                                 // 1
+@interface THPreviewView ()
 @property (strong, nonatomic) CALayer *overlayLayer;
 @property (strong, nonatomic) NSMutableDictionary *faceLayers;
 @property (nonatomic, readonly) AVCaptureVideoPreviewLayer *previewLayer;
@@ -33,7 +33,7 @@
 
 @implementation THPreviewView
 
-+ (Class)layerClass {                                                       // 2
++ (Class)layerClass {
 	return [AVCaptureVideoPreviewLayer class];
 }
 
@@ -54,10 +54,10 @@
 }
 
 - (void)setupView {
-    self.faceLayers = [NSMutableDictionary dictionary];                     // 1
+    self.faceLayers = [NSMutableDictionary dictionary];
     self.previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
 
-    self.overlayLayer = [CALayer layer];                                    // 2
+    self.overlayLayer = [CALayer layer];
     self.overlayLayer.frame = self.bounds;
     self.overlayLayer.sublayerTransform = CATransform3DMakePerspective(1000);
     [self.previewLayer addSublayer:self.overlayLayer];
@@ -67,7 +67,7 @@
 	return self.previewLayer.session;
 }
 
-- (void)setSession:(AVCaptureSession *)session {                            // 3
+- (void)setSession:(AVCaptureSession *)session {
     self.previewLayer.session = session;
 }
 
@@ -79,36 +79,38 @@
 
     NSArray *transformedFaces = [self transformedFacesFromFaces:faces];
 
-    NSMutableArray *lostFaces = [self.faceLayers.allKeys mutableCopy];      // 1
+    NSMutableArray *lostFaces = [self.faceLayers.allKeys mutableCopy];
 
     for (AVMetadataFaceObject *face in transformedFaces) {
 
-        NSNumber *faceID = @(face.faceID);                                  // 2
+        NSNumber *faceID = @(face.faceID);
 		[lostFaces removeObject:faceID];
 
-        CALayer *layer = [self.faceLayers objectForKey:faceID];             // 3
+        CALayer *layer = [self.faceLayers objectForKey:faceID];
         if (!layer) {
             // no layer for faceID, create new face layer
-            layer = [self makeFaceLayer];                                   // 4
+            layer = [self makeFaceLayer];                                 
             [self.overlayLayer addSublayer:layer];
             self.faceLayers[faceID] = layer;
         }
 
-        layer.transform = CATransform3DIdentity;                            // 1
+        layer.transform = CATransform3DIdentity;
         layer.frame = face.bounds;
 
+        //判断人脸对象是否具有有效的倾斜角
         if (face.hasRollAngle) {
-            CATransform3D t = [self transformForRollAngle:face.rollAngle];  // 2
+            CATransform3D t = [self transformForRollAngle:face.rollAngle];
             layer.transform = CATransform3DConcat(layer.transform, t);
         }
 
+        //询问人脸对象是否有偏转角
         if (face.hasYawAngle) {
-            CATransform3D t = [self transformForYawAngle:face.yawAngle];    // 4
+            CATransform3D t = [self transformForYawAngle:face.yawAngle];
             layer.transform = CATransform3DConcat(layer.transform, t);
         }
     }
 
-    for (NSNumber *faceID in lostFaces) {                                   // 6
+    for (NSNumber *faceID in lostFaces) {
         CALayer *layer = [self.faceLayers objectForKey:faceID];
         [layer removeFromSuperlayer];
         [self.faceLayers removeObjectForKey:faceID];
@@ -116,11 +118,11 @@
 
 }
 
-- (NSArray *)transformedFacesFromFaces:(NSArray *)faces {                   // 2
+- (NSArray *)transformedFacesFromFaces:(NSArray *)faces {
     NSMutableArray *transformedFaces = [NSMutableArray array];
     for (AVMetadataObject *face in faces) {
-        AVMetadataObject *transformedFace =                                 // 3
-            [self.previewLayer transformedMetadataObjectForMetadataObject:face];
+        //将设备坐标空间的人脸对象转换为视图空间对象集合
+        AVMetadataObject *transformedFace = [self.previewLayer transformedMetadataObjectForMetadataObject:face];
         [transformedFaces addObject:transformedFace];
     }
     return transformedFaces;
@@ -129,28 +131,26 @@
 - (CALayer *)makeFaceLayer {
     CALayer *layer = [CALayer layer];
     layer.borderWidth = 5.0f;
-    layer.borderColor =
-        [UIColor colorWithRed:0.188 green:0.517 blue:0.877 alpha:1.000].CGColor;
+    layer.borderColor = [UIColor colorWithRed:0.188 green:0.517 blue:0.877 alpha:1.000].CGColor;
     return layer;
 }
 
 // Rotate around Z-axis
-- (CATransform3D)transformForRollAngle:(CGFloat)rollAngleInDegrees {        // 3
+- (CATransform3D)transformForRollAngle:(CGFloat)rollAngleInDegrees {
     CGFloat rollAngleInRadians = THDegreesToRadians(rollAngleInDegrees);
     return CATransform3DMakeRotation(rollAngleInRadians, 0.0f, 0.0f, 1.0f);
 }
 
 // Rotate around Y-axis
-- (CATransform3D)transformForYawAngle:(CGFloat)yawAngleInDegrees {          // 5
+- (CATransform3D)transformForYawAngle:(CGFloat)yawAngleInDegrees {
     CGFloat yawAngleInRadians = THDegreesToRadians(yawAngleInDegrees);
 
-    CATransform3D yawTransform =
-        CATransform3DMakeRotation(yawAngleInRadians, 0.0f, -1.0f, 0.0f);
+    CATransform3D yawTransform = CATransform3DMakeRotation(yawAngleInRadians, 0.0f, -1.0f, 0.0f);
 
     return CATransform3DConcat(yawTransform, [self orientationTransform]);
 }
 
-- (CATransform3D)orientationTransform {                                     // 6
+- (CATransform3D)orientationTransform {                                   
 	CGFloat angle = 0.0;
 	switch ([UIDevice currentDevice].orientation) {
 		case UIDeviceOrientationPortraitUpsideDown:
