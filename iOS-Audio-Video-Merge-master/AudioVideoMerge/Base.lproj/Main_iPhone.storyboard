@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11762" systemVersion="15G1421" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" colorMatched="YES" initialViewController="Spk-Jm-n31">
+    <device id="retina4_0" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
+    <dependencies>
+        <deployment identifier="iOS"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11757"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Merge Audio & Video-->
+        <scene sceneID="ufC-wZ-h7g">
+            <objects>
+                <viewController id="vXZ-lx-hvc" customClass="ViewController" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="jyV-Pf-zRb"/>
+                        <viewControllerLayoutGuide type="bottom" id="2fi-mo-0CV"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="kh9-bI-dsS">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="fjl-IC-Irv">
+                                <rect key="frame" x="0.0" y="119" width="320" height="449"/>
+                                <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.0" colorSpace="custom" customColorSpace="sRGB"/>
+                            </view>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="oYA-mJ-ZCr">
+                                <rect key="frame" x="112" y="81" width="96" height="30"/>
+                                <color key="backgroundColor" red="0.1942619055" green="0.68157169419999997" blue="0.72904636550000002" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <state key="normal" title="Merge &amp; Save">
+                                    <color key="titleColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                </state>
+                                <connections>
+                                    <action selector="btnMergeTapped:" destination="vXZ-lx-hvc" eventType="touchUpInside" id="Vxk-Uc-Qcg"/>
+                                </connections>
+                            </button>
+                            <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="whiteLarge" translatesAutoresizingMaskIntoConstraints="NO" id="E45-uE-fIk">
+                                <rect key="frame" x="141" y="266" width="37" height="37"/>
+                            </activityIndicatorView>
+                        </subviews>
+                        <color key="backgroundColor" red="0.33333333333333331" green="0.33333333333333331" blue="0.33333333333333331" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                        <constraints>
+                            <constraint firstItem="fjl-IC-Irv" firstAttribute="leading" secondItem="kh9-bI-dsS" secondAttribute="leading" id="9TF-S4-2Wo"/>
+                            <constraint firstItem="oYA-mJ-ZCr" firstAttribute="top" secondItem="jyV-Pf-zRb" secondAttribute="bottom" constant="17" id="BGe-qM-x0s"/>
+                            <constraint firstItem="E45-uE-fIk" firstAttribute="centerY" secondItem="kh9-bI-dsS" secondAttribute="centerY" id="Ddw-79-l6k"/>
+                            <constraint firstItem="fjl-IC-Irv" firstAttribute="top" secondItem="oYA-mJ-ZCr" secondAttribute="bottom" constant="8" id="Dkx-fS-uUy"/>
+                            <constraint firstItem="oYA-mJ-ZCr" firstAttribute="centerX" secondItem="kh9-bI-dsS" secondAttribute="centerX" id="Ych-Ps-8hq"/>
+                            <constraint firstAttribute="trailing" secondItem="fjl-IC-Irv" secondAttribute="trailing" id="c6w-xL-m2Q"/>
+                            <constraint firstItem="E45-uE-fIk" firstAttribute="centerX" secondItem="kh9-bI-dsS" secondAttribute="centerX" id="gcs-Bc-Js5"/>
+                            <constraint firstItem="2fi-mo-0CV" firstAttribute="top" secondItem="fjl-IC-Irv" secondAttribute="bottom" id="xuA-lh-4r1"/>
+                        </constraints>
+                    </view>
+                    <navigationItem key="navigationItem" title="Merge Audio &amp; Video" id="wlD-4R-0Sd"/>
+                    <connections>
+                        <outlet property="activityView" destination="E45-uE-fIk" id="ahI-Iy-xOu"/>
+                        <outlet property="vwMoviePlayer" destination="fjl-IC-Irv" id="0pB-cd-inb"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="x5A-6p-PRh" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="42" y="143"/>
+        </scene>
+        <!--Navigation Controller-->
+        <scene sceneID="ZmE-FX-JJb">
+            <objects>
+                <navigationController automaticallyAdjustsScrollViewInsets="NO" id="Spk-Jm-n31" sceneMemberID="viewController">
+                    <toolbarItems/>
+                    <navigationBar key="navigationBar" contentMode="scaleToFill" id="Um2-Qs-8kJ">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
+                        <autoresizingMask key="autoresizingMask"/>
+                    </navigationBar>
+                    <nil name="viewControllers"/>
+                    <connections>
+                        <segue destination="vXZ-lx-hvc" kind="relationship" relationship="rootViewController" id="YOq-1s-cr0"/>
+                    </connections>
+                </navigationController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="SkG-RX-ncy" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-454" y="143"/>
+        </scene>
+    </scenes>
+    <simulatedMetricsContainer key="defaultSimulatedMetrics">
+        <simulatedStatusBarMetrics key="statusBar"/>
+        <simulatedOrientationMetrics key="orientation"/>
+        <simulatedScreenMetrics key="destination" type="retina4_0.fullscreen"/>
+    </simulatedMetricsContainer>
+</document>
