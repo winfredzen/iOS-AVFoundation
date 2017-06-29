@@ -39,7 +39,7 @@
     if ([self.captureSession canAddOutput:self.metadataOutput]) {
         [self.captureSession addOutput:self.metadataOutput];
 
-        NSArray *metadataObjectTypes = @[AVMetadataObjectTypeFace];         // 3
+        NSArray *metadataObjectTypes = @[AVMetadataObjectTypeFace];         
         self.metadataOutput.metadataObjectTypes = metadataObjectTypes;
 
         dispatch_queue_t mainQueue = dispatch_get_main_queue();
