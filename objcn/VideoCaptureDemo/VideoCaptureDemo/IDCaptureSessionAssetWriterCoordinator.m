@@ -64,7 +64,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 }
 
 #pragma mark - Recording
-
+//开始录制
 - (void)startRecording
 {
     @synchronized(self)
@@ -81,16 +81,18 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     
 
     self.assetWriterCoordinator = [[IDAssetWriterCoordinator alloc] initWithURL:_recordingURL];
+    //各种音频 视频设置
     if(_outputAudioFormatDescription != nil){
         [_assetWriterCoordinator addAudioTrackWithSourceFormatDescription:self.outputAudioFormatDescription settings:_audioCompressionSettings];
     }
     [_assetWriterCoordinator addVideoTrackWithSourceFormatDescription:self.outputVideoFormatDescription settings:_videoCompressionSettings];
-    
+    //调用队列
     dispatch_queue_t callbackQueue = dispatch_queue_create( "com.example.capturesession.writercallback", DISPATCH_QUEUE_SERIAL ); // guarantee ordering of callbacks with a serial queue
     [_assetWriterCoordinator setDelegate:self callbackQueue:callbackQueue];
     [_assetWriterCoordinator prepareToRecord]; // asynchronous, will call us back with recorderDidFinishPreparing: or recorder:didFailWithError: when done
 }
 
+//定制录制
 - (void)stopRecording
 {
     @synchronized(self)
@@ -104,7 +106,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
 }
 
 #pragma mark - Private methods
-
+//把output添加到session中
 - (void)addDataOutputsToCaptureSession:(AVCaptureSession *)captureSession
 {
     self.videoDataOutput = [AVCaptureVideoDataOutput new];
@@ -134,21 +136,22 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
     self.outputVideoFormatDescription = nil;
 }
 
+//设置CompressionSettings
 - (void)setCompressionSettings
 {
     _videoCompressionSettings = [_videoDataOutput recommendedVideoSettingsForAssetWriterWithOutputFileType:AVFileTypeQuickTimeMovie];
     _audioCompressionSettings = [_audioDataOutput recommendedAudioSettingsForAssetWriterWithOutputFileType:AVFileTypeQuickTimeMovie];
 }
 
-#pragma mark - SampleBufferDelegate methods
+#pragma mark - SampleBufferDelegate methods 代理方法
 
 - (void)captureOutput:(AVCaptureOutput *)captureOutput didOutputSampleBuffer:(CMSampleBufferRef)sampleBuffer fromConnection:(AVCaptureConnection *)connection
 {
     CMFormatDescriptionRef formatDescription = CMSampleBufferGetFormatDescription(sampleBuffer);
     
-    if (connection == _videoConnection){
+    if (connection == _videoConnection){//视频
         if (self.outputVideoFormatDescription == nil) {
-            // Don't render the first sample buffer.
+            // Don't render the first sample buffer.不渲染第一个sample buffer
             // This gives us one frame interval (33ms at 30fps) for setupVideoPipelineWithInputFormatDescription: to complete.
             // Ideally this would be done asynchronously to ensure frames don't back up on slower devices.
             
@@ -159,6 +162,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
             self.outputVideoFormatDescription = formatDescription;
             @synchronized(self) {
                 if(_recordingStatus == RecordingStatusRecording){
+                    //拼接SampleBuffer
                     [_assetWriterCoordinator appendVideoSampleBuffer:sampleBuffer];
                 }
             }
@@ -167,6 +171,7 @@ typedef NS_ENUM( NSInteger, RecordingStatus )
         self.outputAudioFormatDescription = formatDescription;
         @synchronized( self ) {
             if(_recordingStatus == RecordingStatusRecording){
+                //拼接SampleBuffer
                 [_assetWriterCoordinator appendAudioSampleBuffer:sampleBuffer];
             }
         }

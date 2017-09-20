@@ -140,10 +140,11 @@ typedef NS_ENUM(NSInteger, WriterStatus){
         {
             NSError *error = nil;
             // AVAssetWriter will not write over an existing file.
+            // AVAssetWriter不会覆盖一个已存在的文件
             [[NSFileManager defaultManager] removeItemAtURL:_URL error:NULL];
             _assetWriter = [[AVAssetWriter alloc] initWithURL:_URL fileType:AVFileTypeQuickTimeMovie error:&error];
             
-            // Create and add inputs
+            // Create and add inputs 创建和添加input
             if (!error && _videoTrackSourceFormatDescription) {
                 [self setupAssetWriterVideoInputWithSourceFormatDescription:_videoTrackSourceFormatDescription transform:_videoTrackTransform settings:_videoTrackSettings error:&error];
             }
@@ -179,6 +180,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     [self appendSampleBuffer:sampleBuffer ofMediaType:AVMediaTypeAudio];
 }
 
+//完成写入会话
 - (void)finishRecording
 {
     @synchronized(self)
@@ -243,7 +245,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
 
 
 #pragma mark - Private methods
-
+//设置AssetWriterAudioInput 音频
 - (BOOL)setupAssetWriterAudioInputWithSourceFormatDescription:(CMFormatDescriptionRef)audioFormatDescription settings:(NSDictionary *)audioSettings error:(NSError **)errorOut
 {
     if (!audioSettings) {
@@ -274,6 +276,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     return YES;
 }
 
+//设置AssetWriterVideoInput 视频
 - (BOOL)setupAssetWriterVideoInputWithSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription transform:(CGAffineTransform)transform settings:(NSDictionary *)videoSettings error:(NSError **)errorOut
 {
     if (!videoSettings){
@@ -282,6 +285,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     
     if ([_assetWriter canApplyOutputSettings:videoSettings forMediaType:AVMediaTypeVideo]){
         _videoInput = [[AVAssetWriterInput alloc] initWithMediaType:AVMediaTypeVideo outputSettings:videoSettings sourceFormatHint:videoFormatDescription];
+        //设为YES，指明这个输入应该针对实时性进行优化
         _videoInput.expectsMediaDataInRealTime = YES;
         _videoInput.transform = transform;
         
@@ -302,9 +306,11 @@ typedef NS_ENUM(NSInteger, WriterStatus){
     return YES;
 }
 
+//videoSetting
 - (NSDictionary *)fallbackVideoSettingsForSourceFormatDescription:(CMFormatDescriptionRef)videoFormatDescription
 {
     float bitsPerPixel;
+    //从CMFormatDescriptionRef获取尺寸
     CMVideoDimensions dimensions = CMVideoFormatDescriptionGetDimensions(videoFormatDescription);
     int numPixels = dimensions.width * dimensions.height;
     int bitsPerSecond;
@@ -362,6 +368,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
             }
             
             if(!_haveStartedSession && mediaType == AVMediaTypeVideo) {
+                //启动会话 ，将样本的呈现时间作为源时间传递到方法中
                 [_assetWriter startSessionAtSourceTime:CMSampleBufferGetPresentationTimeStamp(sampleBuffer)];
                 _haveStartedSession = YES;
             }
@@ -385,6 +392,7 @@ typedef NS_ENUM(NSInteger, WriterStatus){
 }
 
 // call under @synchonized( self )
+// 状态改变 通知代理
 - (void)transitionToStatus:(WriterStatus)newStatus error:(NSError *)error
 {
     BOOL shouldNotifyDelegate = NO;

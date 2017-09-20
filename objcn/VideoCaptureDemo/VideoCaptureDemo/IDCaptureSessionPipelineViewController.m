@@ -76,7 +76,7 @@
 }
 
 #pragma mark - Private methods
-
+//配置界面
 - (void)configureInterface
 {
     AVCaptureVideoPreviewLayer *previewLayer = [_captureSessionCoordinator previewLayer];
@@ -93,6 +93,7 @@
     _dismissing = NO;
 }
 
+//是否有权限
 - (void)checkPermissions
 {
     IDPermissionsManager *pm = [IDPermissionsManager new];
