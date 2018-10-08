@@ -52,6 +52,7 @@ typedef NS_ENUM(NSInteger, PanDirection){
 - (void)viewDidAppear:(BOOL)animated
 {
     [super viewDidAppear:animated];
+    //此时才添加到view层级上
     WZBrightnessView *brightnessView = [WZBrightnessView sharedBrightnessView];
     
 }
